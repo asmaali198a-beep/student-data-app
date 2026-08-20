@@ -13,9 +13,9 @@ jobs:
 
       - name: Unzip Android project
         run: |
-          if [ -f "student-data-app.zip" ]; then
+          if [ -f "student-data-app-fixed.zip" ]; then
             mkdir -p android-project
-            unzip -o "student-data-app.zip" -d android-project
+            unzip -o "student-data-app-fixed.zip" -d android-project
           fi
 
       - name: Find Android project
@@ -79,5 +79,5 @@ jobs:
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: Student-Data-App-APK
+          name: student-data-app-fixed.zip
           path: ${{ env.APK_PATH }}
