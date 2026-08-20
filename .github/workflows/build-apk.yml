@@ -1,0 +1,47 @@
+name: Build APK
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Unzip Android project
+        run: |
+          if [ -f "student-data-app.zip" ]; then
+            unzip -o "student-data-app.zip" -d android-project
+          else
+            echo "student-data-app.zip not found"
+            exit 1
+          fi
+
+      - name: Find Android project
+        run: |
+          echo "Searching for Gradle project..."
+          find android-project -name "gradlew" -type f -print
+
+      - name: Set executable permission
+        run: |
+          chmod +x $(find android-project -name "gradlew" -type f | head -1)
+
+      - name: Build APK
+        run: |
+          GRADLEW=$(find android-project -name "gradlew" -type f | head -1)
+          PROJECT_DIR=$(dirname "$GRADLEW")
+          cd "$PROJECT_DIR"
+          ./gradlew assembleDebug
+
+      - name: Find APK
+        run: |
+          find android-project -name "*.apk" -type f -print
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: student-data-app-apk
+          path: android-project/**/*.apk
