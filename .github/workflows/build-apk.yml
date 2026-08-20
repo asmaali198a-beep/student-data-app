@@ -4,56 +4,41 @@ on:
   workflow_dispatch:
 
 jobs:
-    build:
-        runs-on: ubuntu-latest
+  build:
+    runs-on: ubuntu-latest
 
-        steps:
-            - name: Checkout repository
-              uses: actions/checkout@v4
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-            - name: Unzip Android project
-              run: |
-                if [ -f "student-data-app.zip" ]; then
-                  unzip -o "student-data-app.zip" -d android-project
-                else
-                  echo "ZIP file not found"
-                  exit 1
-                fi
+      - name: Unzip Android project
+        run: |
+          mkdir -p android-project
+          unzip -o "student-data-app.zip" -d android-project
 
-            - name: Find Android project
-              run: |
-                GRADLEW=$(find android-project -type f -name "gradlew" | head -n 1)
-                if [ -z "$GRADLEW" ]; then
-                  echo "gradlew not found"
-                  find android-project -maxdepth 4 -type f | head -100
-                  exit 1
-                fi
-                echo "Found Gradle wrapper: $GRADLEW"
-                echo "GRADLEW=$GRADLEW" >> "$GITHUB_ENV"
-                echo "PROJECT_DIR=$(dirname "$GRADLEW")" >> "$GITHUB_ENV"
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
 
-            - name: Set executable permission
-              run: |
-                chmod +x "$GRADLEW"
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.7'
 
-            - name: Setup Java
-              uses: actions/setup-java@v4
-              with:
-                distribution: temurin
-                java-version: '17'
+      - name: Build APK
+        working-directory: android-project/student-data-app
+        run: |
+          gradle assembleDebug --no-daemon
 
-            - name: Build APK
-              working-directory: ${{ env.PROJECT_DIR }}
-              run: |
-                ./gradlew assembleDebug --no-daemon
+      - name: Find APK
+        run: |
+          find android-project/student-data-app -type f -name "*.apk" -print
 
-            - name: Find APK
-              run: |
-                find . -type f -name "*.apk" -print
-
-            - name: Upload APK
-              uses: actions/upload-artifact@v4
-              with:
-                name: student-data-app-apk
-                path: "**/build/outputs/apk/debug/*.apk"
-                if-no-files-found: error
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: student-data-app-apk
+          path: "android-project/student-data-app/**/build/outputs/apk/debug/*.apk"
+          if-no-files-found: error
