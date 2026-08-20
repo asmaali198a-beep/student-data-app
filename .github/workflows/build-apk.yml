@@ -40,10 +40,29 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
 
+      - name: Force Kotlin standard library version
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: |
+          cat > kotlin-fix.gradle <<'EOF'
+          allprojects {
+              configurations.configureEach {
+                  resolutionStrategy.eachDependency { details ->
+                      if (details.requested.group == "org.jetbrains.kotlin" &&
+                          (details.requested.name == "kotlin-stdlib" ||
+                           details.requested.name == "kotlin-stdlib-jdk7" ||
+                           details.requested.name == "kotlin-stdlib-jdk8")) {
+                          details.useVersion("1.8.22")
+                          details.because("Avoid Kotlin stdlib duplicate classes")
+                      }
+                  }
+              }
+          }
+          EOF
+
       - name: Build APK
         working-directory: ${{ env.PROJECT_DIR }}
         run: |
-          gradle assembleDebug --stacktrace
+          gradle -I kotlin-fix.gradle assembleDebug --stacktrace
 
       - name: Find APK
         run: |
